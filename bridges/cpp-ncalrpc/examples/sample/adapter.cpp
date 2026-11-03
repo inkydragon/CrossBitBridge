@@ -14,12 +14,12 @@ static decltype(&legacy_add) add_fn = nullptr;
 static decltype(&legacy_scale) scale_fn = nullptr;
 // RPC may dispatch concurrent calls; serialize entry to the legacy library.
 static std::mutex call_mutex;
-bool adapter_initialize(const wchar_t* path) {
+bool adapter_initialize(const std::filesystem::path& path) {
     // Caller supplies an absolute path; dependencies may live alongside the DLL.
-    if (!path || !std::filesystem::path(path).is_absolute()) {
+    if (!path.is_absolute()) {
         fwprintf(stderr, L"Vendor DLL path must be absolute\n"); return false;
     }
-    unique_library module(LoadLibraryExW(path, nullptr,
+    unique_library module(LoadLibraryExW(path.c_str(), nullptr,
         LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS));
     if (!module) {
         fwprintf(stderr, L"Cannot load DLL: %lu\n", GetLastError());

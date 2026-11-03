@@ -64,7 +64,7 @@ To build your interface, also supply ordinary adapter sources. Changing interfac
 Adapter requirements:
 
 1. Use explicit `handle_t` binding parameters and matching interface UUID/version on both sides. Do not use `[object]` COM IDL.
-2. Include generated `bridge.gen.h` in `adapter.cpp` and implement `Impl_*`, `adapter_initialize`, and `adapter_finalize`; see `rpc/adapter.h`.
+2. Include generated `bridge.gen.h` in `adapter.cpp` and implement `Impl_*`, `adapter_initialize(const std::filesystem::path&)`, and `adapter_finalize`; see `rpc/adapter.h`. The host owns the DLL path and lends it to the adapter during initialization.
 3. Expose the caller-facing C ABI in `client.cpp` and convert recoverable RPC exceptions to transport status codes. Use `RpcExceptionFilter` so fatal process errors are not treated as ordinary RPC failures.
 4. Test the generated interface in `probe.cpp`. Add project-specific include/link settings directly to CMake; no additional schema is required.
 5. Use fixed-width values, explicitly sized arrays, and synchronous calls. Process pointers, STL objects, and Julia objects must not enter the wire protocol.

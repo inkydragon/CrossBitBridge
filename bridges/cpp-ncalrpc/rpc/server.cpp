@@ -56,7 +56,8 @@ int wmain(int argc, wchar_t** argv) try {
         fwprintf(stderr, L"Usage: ncal_host.exe <endpoint> <absolute-vendor-dll>\n");
         return 2;
     }
-    if (!adapter_initialize(argv[2])) return 3;
+    const std::filesystem::path dll_path(argv[2]);
+    if (!adapter_initialize(dll_path)) return 3;
     struct adapter_lifetime { ~adapter_lifetime() { adapter_finalize(); } } adapter;
     auto sd = current_user_descriptor();
     if (!sd) return 4;

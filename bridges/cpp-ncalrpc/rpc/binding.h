@@ -8,6 +8,7 @@ public:
     ~rpc_binding() { if (handle_) RpcBindingFree(&handle_); }
     rpc_binding(const rpc_binding&) = delete;
     rpc_binding& operator=(const rpc_binding&) = delete;
+    // Borrows a null-terminated string for this call; no endpoint pointer is retained.
     RPC_STATUS connect(const wchar_t* endpoint);
     RPC_BINDING_HANDLE get() const noexcept { return handle_; }
 private:
