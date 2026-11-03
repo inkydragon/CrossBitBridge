@@ -1,7 +1,13 @@
 name: C++ ncalrpc MWE
 on:
   push:
+    paths:
+      - 'examples/cpp-ncalrpc/**'
+      - '.github/workflows/windows.yml'
   pull_request:
+    paths:
+      - 'examples/cpp-ncalrpc/**'
+      - '.github/workflows/windows.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,11 +18,11 @@ jobs:
       run:
         working-directory: examples/cpp-ncalrpc
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: Generate and build x86 host and x64 client
         shell: pwsh
         run: ./scripts/build.ps1
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3.0.3
         with:
           version: '1'
           arch: x64
@@ -25,7 +31,7 @@ jobs:
         run: ./scripts/test.ps1 -Julia julia
       - name: Upload binaries, generated stubs and logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: cpp-ncalrpc-windows
           retention-days: 7
