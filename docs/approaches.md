@@ -10,6 +10,12 @@ Design discussion and candidate paths for adapting legacy libraries. This is not
 - Existing marshalable COM interfaces: evaluate out-of-process COM first. Ordinary C/C++ objects still need wrappers; ownership, threads, and callbacks remain the adapter's responsibility. Complex object lifetimes alone do not require COM.
 - Ease of debugging and business-level wrappers matter more than small call overhead: an HTTP service is an option.
 
+## Existing cross-bitness bridge: MSL-LoadLib
+
+[MSL-LoadLib's client-server guide](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) demonstrates a 64-bit Python client calling a 32-bit library through a `Client64` / `Server32` pair. Users write server-side wrappers for the native calls and invoke them through `request32`; creating the client starts the server automatically. Consider it when Python fits the application, or as a reference for separating native bindings from cross-process calls.
+
+The documented approach exchanges serialized Python objects through a file using `pickle`. It is a useful architectural reference, but does not establish performance equivalence with ncalrpc. CrossBitBridge does not currently integrate or validate MSL-LoadLib.
+
 ## C++ and .NET Native AOT
 
 The following comparison concerns retaining Windows RPC ncalrpc. It is architectural analysis, not a measured comparison. The running [C++ example](../examples/cpp-ncalrpc/README.md) does not establish that another path is slower or unsuitable.
