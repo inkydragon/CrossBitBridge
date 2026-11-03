@@ -1,0 +1,16 @@
+[
+    uuid(12ae49e8-1d23-4e0a-9a36-53c196bd7fb4),
+    version(1.0),
+    pointer_default(unique)
+]
+interface NcalRpc
+{
+    unsigned long Ping([in] handle_t binding);
+    long Add([in] handle_t binding, [in] long a, [in] long b,
+             [out] long *result);
+    long Scale([in] handle_t binding,
+               [in, range(0, 1048576)] unsigned long count,
+               [in, unique, size_is(count)] const float *input,
+               [in] float factor,
+               [out, ref, size_is(count)] float *output);
+}

@@ -1,0 +1,4 @@
+LIBRARY sample_legacy
+EXPORTS
+    legacy_add
+    legacy_scale

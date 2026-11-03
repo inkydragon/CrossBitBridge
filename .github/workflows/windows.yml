@@ -1,0 +1,39 @@
+name: C++ ncalrpc MWE
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-test:
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: examples/cpp-ncalrpc
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate and build x86 host and x64 client
+        shell: pwsh
+        run: ./scripts/build.ps1
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+      - name: Exercise real cross-bitness RPC
+        shell: pwsh
+        run: ./scripts/test.ps1 -Julia julia
+      - name: Upload binaries, generated stubs and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-ncalrpc-windows
+          retention-days: 7
+          path: |
+            examples/cpp-ncalrpc/build/Win32/Release/*.exe
+            examples/cpp-ncalrpc/build/Win32/Release/*.dll
+            examples/cpp-ncalrpc/build/x64/Release/*.exe
+            examples/cpp-ncalrpc/build/x64/Release/*.dll
+            examples/cpp-ncalrpc/build/Win32/generated/
+            examples/cpp-ncalrpc/build/x64/generated/
+            examples/cpp-ncalrpc/artifacts/logs/
