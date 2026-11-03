@@ -44,43 +44,54 @@ static unique_local<void> current_user_descriptor() {
     sddl += sid_owner.get();
     sddl += L")";
     PSECURITY_DESCRIPTOR result = nullptr;
-    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            sddl.c_str(), SDDL_REVISION_1, &result, nullptr)) {
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(), SDDL_REVISION_1,
+                                                              &result, nullptr)) {
         report_security_error(L"ConvertStringSecurityDescriptorToSecurityDescriptorW");
         return nullptr;
     }
     return unique_local<void>(result);
 }
+
 int wmain(int argc, wchar_t** argv) try {
     if (argc != 3) {
         fwprintf(stderr, L"Usage: ncal_host.exe <endpoint> <absolute-vendor-dll>\n");
         return 2;
     }
     const std::filesystem::path dll_path(argv[2]);
-    if (!adapter_initialize(dll_path)) return 3;
-    struct adapter_lifetime { ~adapter_lifetime() { adapter_finalize(); } } adapter;
+    if (!adapter_initialize(dll_path))
+        return 3;
+
+    struct adapter_lifetime {
+        ~adapter_lifetime() {
+            adapter_finalize();
+        }
+    } adapter;
+
     auto sd = current_user_descriptor();
-    if (!sd) return 4;
+    if (!sd)
+        return 4;
     wchar_t protocol[] = L"ncalrpc";
-    RPC_STATUS status = RpcServerUseProtseqEpW(
-        reinterpret_cast<RPC_WSTR>(protocol),
-        RPC_C_PROTSEQ_MAX_REQS_DEFAULT, reinterpret_cast<RPC_WSTR>(argv[1]), nullptr);
+    RPC_STATUS status =
+        RpcServerUseProtseqEpW(reinterpret_cast<RPC_WSTR>(protocol), RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
+                               reinterpret_cast<RPC_WSTR>(argv[1]), nullptr);
     if (status == RPC_S_OK)
         status = RpcServerRegisterAuthInfoW(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr);
     if (status == RPC_S_OK)
         status = RpcServerRegisterIf3(NCAL_SERVER_INTERFACE, nullptr, nullptr,
-            RPC_IF_ALLOW_LOCAL_ONLY | RPC_IF_ALLOW_SECURE_ONLY,
-            RPC_C_LISTEN_MAX_CALLS_DEFAULT, 16 * 1024 * 1024, nullptr, sd.get());
+                                      RPC_IF_ALLOW_LOCAL_ONLY | RPC_IF_ALLOW_SECURE_ONLY,
+                                      RPC_C_LISTEN_MAX_CALLS_DEFAULT, 16 * 1024 * 1024, nullptr,
+                                      sd.get());
     if (status == RPC_S_OK) {
         wprintf(L"READY endpoint=%ls bits=%zu\n", argv[1], sizeof(void*) * 8);
         fflush(stdout);
         status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, FALSE);
         RpcServerUnregisterIf(NCAL_SERVER_INTERFACE, nullptr, TRUE);
     }
-    if (status != RPC_S_OK) fwprintf(stderr, L"RPC server error: %lu\n", status);
+    if (status != RPC_S_OK)
+        fwprintf(stderr, L"RPC server error: %lu\n", status);
     return status == RPC_S_OK ? 0 : 5;
-}
-catch (const std::exception& error) {
+} catch (const std::exception& error) {
+
     fprintf(stderr, "Host initialization failed: %s\n", error.what());
     return 5;
 }
