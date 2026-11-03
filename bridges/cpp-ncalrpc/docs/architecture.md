@@ -17,6 +17,8 @@ See [bridging approaches](../../../docs/approaches.md) for cross-implementation 
 
 `rpc/server.cpp` and `rpc/binding.cpp` implement the host and connection infrastructure. `examples/sample/adapter.cpp`, `client.cpp`, and `probe.cpp` are project-specific adapters; they are not inferred automatically from arbitrary IDL. MIDL handles marshaling, not verification that a DLL obeys declared buffer lengths.
 
+The independent [legacy sample](../../../legacy/cpp_legacy/README.md) owns `legacy.cpp`, `legacy.h`, and `legacy.def`, with its own Win32 build. This bridge owns IDL, host, adapter, client, probe, and Julia examples. The adapter includes the legacy header through an explicit include directory; no legacy DLL is built, linked, or copied here. Tests receive the separately built DLL using required `-LegacyDll` and pass its absolute path to the host.
+
 ## Security and lifetime
 
 The client starts an x86 EXE under the intended user with a session-specific endpoint. It binds directly to the known endpoint without Endpoint Mapper, service/COM registration, or registry changes.

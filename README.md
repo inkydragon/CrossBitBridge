@@ -18,9 +18,12 @@ x64 Julia → x64 client → x86 host → C API DLL. Verified locally on Windows
 
 ```powershell
 cd bridges/cpp-ncalrpc
+../../legacy/cpp_legacy/build.ps1
 ./scripts/build.ps1
-./scripts/test.ps1
+./scripts/test.ps1 -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll
 ```
+
+[C++ legacy sample](legacy/cpp_legacy/README.md) builds the x86 DLL independently. `legacy/<case>/` holds library samples; `bridges/<language>-<transport>/` holds RPC hosts, adapters, clients, and tests.
 
 The example README covers prerequisites, custom IDL, and Julia testing.
 

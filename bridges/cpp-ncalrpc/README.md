@@ -22,15 +22,18 @@ Install the Visual Studio 2022 / Build Tools C++ desktop tools, Windows SDK incl
 
 ```powershell
 cd T:\CrossBitBridge\bridges\cpp-ncalrpc
+../../legacy/cpp_legacy/build.ps1
 ./scripts/build.ps1
-./scripts/test.ps1
+./scripts/test.ps1 -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll
 # Optional: test the real Julia client; standard libraries only.
-./scripts/test.ps1 -Julia julia
+./scripts/test.ps1 -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll -Julia julia
 ```
+
+The [legacy sample](../../legacy/cpp_legacy/README.md) builds separately. This bridge includes its header through an explicit CMake include path, without linking or copying its DLL. `-LegacyDll` is required: the test checks that the file exists and resolves it to an absolute path before starting the x86 host. Relative DLL paths are resolved from the caller's working directory.
 
 The test starts a host on a dedicated session endpoint, makes real RPC calls, and terminates that host in `finally`. It does not affect other host processes. It validates the call boundary; the example has no session resources requiring orderly shutdown.
 
-- `build/Win32/Release/sample_legacy.dll`: example x86 DLL.
+- `../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll`: independently built example x86 DLL.
 - `build/Win32/Release/ncal_host.exe`: x86 RPC host.
 - `build/x64/Release/ncal_client.dll`: x64 C ABI client.
 - `build/x64/Release/ncal_probe.exe`: standalone integration test.
@@ -53,8 +56,7 @@ To build your interface, also supply ordinary adapter sources. Changing interfac
   -Interface DeviceRpc_v1_0 `
   -Adapter C:\private\adapter.cpp `
   -Client C:\private\client.cpp `
-  -Probe C:\private\probe.cpp `
-  -SkipSampleDll
+  -Probe C:\private\probe.cpp
 ```
 
 `-Interface` combines the IDL interface name and version: `DeviceRpc` with `version(1.0)` becomes `DeviceRpc_v1_0`. MIDL adds `Impl_` to server symbols and `Wire_` to client symbols. Build commands quote paths separately and support spaces. This template tracks one root IDL; after changing an imported IDL, touch the root IDL or regenerate. Import dependencies are not scanned automatically.
@@ -73,7 +75,7 @@ The host loads vendor DLLs by absolute path at runtime, so CI does not need prop
 
 ## CI
 
-The root [`.github/workflows/windows.yml`](../../.github/workflows/windows.yml) builds, tests, and uploads artifacts on a Windows 2022 runner. It installs x64 Julia to verify the example client. No remote repository or GitHub Actions run has been created. See [validation.md](docs/validation.md) for local Windows evidence.
+The root [`.github/workflows/windows.yml`](../../.github/workflows/windows.yml) builds, tests, and uploads artifacts on a Windows 2022 runner. It installs x64 Julia to verify the example client. The directory-rename commit passed GitHub Actions; see the validation record for evidence. See [validation.md](docs/validation.md) for local Windows evidence.
 
 Copy the example into your own private repository; no Julia package registration is required. Cloud builds can compile wrappers only, with proprietary DLL compatibility tests running locally or on a self-hosted runner.
 

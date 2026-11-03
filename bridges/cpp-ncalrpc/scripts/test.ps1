@@ -1,12 +1,16 @@
 [CmdletBinding()]
 param(
+    [Parameter(Mandatory = $true)][string]$LegacyDll,
     [ValidateSet("Debug", "Release")][string]$Configuration = "Release",
     [string]$Julia = ""
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $hostExe = Join-Path $root "build/Win32/$Configuration/ncal_host.exe"
-$dll = Join-Path $root "build/Win32/$Configuration/sample_legacy.dll"
+if (-not (Test-Path -LiteralPath $LegacyDll -PathType Leaf)) {
+    throw "Legacy DLL does not exist: $LegacyDll"
+}
+$dll = (Resolve-Path -LiteralPath $LegacyDll).Path
 $probe = Join-Path $root "build/x64/$Configuration/ncal_probe.exe"
 $logs = Join-Path $root "artifacts/logs"
 New-Item -ItemType Directory -Force $logs | Out-Null

@@ -2,8 +2,9 @@
 
 Windows-only, IDL-first cross-bitness RPC template. Keep the project small: ordinary IDL and source files, no binding DSL or macros. C++ is the implemented path; .NET AOT is an architecture option, not a validated backend.
 
+- Build legacy separately: `../../legacy/cpp_legacy/build.ps1`
 - Build: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1`
-- Test: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 [-Julia julia]`
+- Test: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll [-Julia julia]`
 - Only x86 loads the vendor DLL. Keep process pointers out of the wire format.
 - MIDL generates stubs; project-specific adapter/client semantics remain explicit code.
 - Preserve local-only authenticated RPC and current-user interface ACLs.

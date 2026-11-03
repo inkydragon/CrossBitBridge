@@ -123,3 +123,30 @@ From `T:\CrossBitBridge\bridges\cpp-ncalrpc`, Windows PowerShell ran:
 ```
 
 All commands completed successfully (PowerShell process exit 0). Fresh Win32/x64 generation, default-IDL rebuild, native scalar/overflow/empty/maximum-array/input-bound/missing-endpoint probes, x86 rejection of the x64 DLL (exit 3), and real x64 Julia smoke tests passed. Transcript: `artifacts/stage1.txt`; test logs: `artifacts/logs/`. Markdown links, current top-level path references, ignored build/log directories, and `git diff --check` passed. CI is checked after pushing this commit; earlier CI statements above describe historical validation only.
+
+## Stage 2: independent legacy sample (2026-11-03)
+
+Stage 1 commit `fadb51548eabd399c076e198aa856ab36fa8dd8a` passed [Windows CI](https://github.com/inkydragon/CrossBitBridge/actions/runs/41613414304) before this stage began. Its fresh build and logs were archived at locally ignored `migration-archive-stage2/`, including the stage 1 transcript. Stage 2 used fresh CMake directories again.
+
+From `T:\CrossBitBridge`, Windows PowerShell executed:
+
+```powershell
+./legacy/cpp_legacy/build.ps1
+cd bridges/cpp-ncalrpc
+Copy-Item spec/sample.idl 'artifacts/spec with spaces/alternate.idl'
+./scripts/build.ps1 -Idl 'T:\CrossBitBridge\bridges\cpp-ncalrpc\artifacts\spec with spaces\alternate.idl' -GenerateOnly
+./scripts/build.ps1
+./scripts/test.ps1 -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll -Julia T:\julia-libm-review-20261103-003936\win64\bin\julia.exe
+```
+
+All builds and tests passed; the PowerShell process exited 0. Transcript: `artifacts/stage2.txt`. The independently built Win32 Release DLL was used explicitly. A recursive check found no `sample_legacy.dll` in the bridge's fresh build directory. The three moved legacy source files are byte-identical to stage 1, retaining names, exports, calling convention, and behavior.
+
+The native probe passed scalar, integer overflow, copied arrays, empty arrays, maximum array size, invalid input, and missing endpoint checks. The x86 host rejected the x64 client DLL with exit 3. Real Windows Julia 1.15.0-DEV.341 / x86_64 passed its scalar and array smoke test. Logs remain under `artifacts/logs/`.
+
+Additional invocation from the repository root passed using a DLL copied to an external path with spaces:
+
+```powershell
+./bridges/cpp-ncalrpc/scripts/test.ps1 -LegacyDll 'bridges/cpp-ncalrpc/artifacts/external dll with spaces/sample_legacy.dll'
+```
+
+That process exited 0 (`artifacts/external-dll.txt`). This reran the native and wrong-architecture checks using a relative path resolved from outside the bridge directory. Missing `-LegacyDll` under noninteractive PowerShell and a nonexistent DLL both exited 1; diagnostics are in `artifacts/missing-parameter.txt` and `artifacts/missing-dll.txt`. Markdown links, stale current path/option references, workflow paths, build/log ignore rules, and `git diff --check` passed. Stage 2 CI is checked after pushing this commit. The unverified security, compatibility, and performance boundaries above still apply.
