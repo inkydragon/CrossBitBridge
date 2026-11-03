@@ -25,7 +25,7 @@ cd bridges/cpp-ncalrpc
 
 [C++ legacy sample](legacy/cpp_legacy/README.md) builds the x86 DLL independently. `legacy/<case>/` holds library samples; `bridges/<language>-<transport>/` holds RPC hosts, adapters, clients, and tests.
 
-The example README covers prerequisites, custom IDL, and Julia testing.
+See the [build and test guide](bridges/cpp-ncalrpc/docs/build.md) for prerequisites, custom IDL, and Julia testing.
 
 ## License
 

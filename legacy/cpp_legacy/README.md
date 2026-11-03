@@ -12,4 +12,4 @@ The default is Win32 Release, producing `build/Win32/Release/sample_legacy.dll`.
 
 The unchanged `legacy.h` and `legacy.def` define the exported C API: `legacy_add` and `legacy_scale`, both `__cdecl`. Status values are 0 (success), 1 (integer overflow), and 2 (invalid buffer). Addition checks signed 32-bit overflow; scaling accepts empty arrays.
 
-Build the bridge separately, then pass this DLL's path to its `scripts/test.ps1 -LegacyDll` parameter. The bridge includes this sample's header but neither links nor copies the DLL. Each legacy sample occupies one directory directly under `legacy/`. See the bridge's [validation record](../../bridges/cpp-ncalrpc/docs/validation.md) for executed integration checks and limits.
+Build the bridge separately, then pass this DLL's path to its `scripts/test.ps1 -LegacyDll` parameter. The bridge includes this sample's header but neither links nor copies the DLL. Each legacy sample occupies one directory directly under `legacy/`. See the bridge's [README](../../bridges/cpp-ncalrpc/README.md) for integration test commands and current limits.
