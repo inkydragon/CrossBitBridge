@@ -18,7 +18,7 @@ sample_legacy.dll (x86, C++ implementation / exported C API)
 
 ## Local build and validation
 
-Install the Visual Studio 2022 / Build Tools C++ desktop tools, Windows SDK including MIDL, and CMake 3.24+. The full Visual Studio IDE is not required. The script uses the VS 2022 generator to build Win32 and x64; a developer command prompt is not required. Windows 10/11 x64 is recommended.
+The bridge uses C++20, a stable language mode supported by the CI's VS 2022 toolchain (selected explicitly; MSVC defaults to C++14). Install the Visual Studio 2022 / Build Tools C++ desktop tools, Windows SDK including MIDL, and CMake 3.24+. The full Visual Studio IDE is not required. The script uses the VS 2022 generator to build Win32 and x64; a developer command prompt is not required. Windows 10/11 x64 is recommended.
 
 ```powershell
 cd T:\CrossBitBridge\bridges\cpp-ncalrpc
@@ -65,7 +65,7 @@ Adapter requirements:
 
 1. Use explicit `handle_t` binding parameters and matching interface UUID/version on both sides. Do not use `[object]` COM IDL.
 2. Include generated `bridge.h` in `adapter.cpp` and implement `Impl_*`, `adapter_initialize`, and `adapter_finalize`; see `rpc/adapter.h`.
-3. Expose the caller-facing C ABI in `client.cpp` and catch RPC exceptions there. Do not let Windows SEH cross the Julia FFI boundary.
+3. Expose the caller-facing C ABI in `client.cpp` and convert recoverable RPC exceptions to transport status codes. Use `RpcExceptionFilter` so fatal process errors are not treated as ordinary RPC failures.
 4. Test the generated interface in `probe.cpp`. Add project-specific include/link settings directly to CMake; no additional schema is required.
 5. Use fixed-width values, explicitly sized arrays, and synchronous calls. Process pointers, STL objects, and Julia objects must not enter the wire protocol.
 

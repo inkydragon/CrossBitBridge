@@ -150,3 +150,34 @@ Additional invocation from the repository root passed using a DLL copied to an e
 ```
 
 That process exited 0 (`artifacts/external-dll.txt`). This reran the native and wrong-architecture checks using a relative path resolved from outside the bridge directory. Missing `-LegacyDll` under noninteractive PowerShell and a nonexistent DLL both exited 1; diagnostics are in `artifacts/missing-parameter.txt` and `artifacts/missing-dll.txt`. Markdown links, stale current path/option references, workflow paths, build/log ignore rules, and `git diff --check` passed. Stage 2 CI is checked after pushing this commit. The unverified security, compatibility, and performance boundaries above still apply.
+
+## C++20 and resource ownership refactor (2026-11-03)
+
+Reviewed manual cleanup in the binding, user security descriptor, and DLL adapter. Token and SID resources could leak if allocation threw between acquisition and manual release; these now have scoped owners. DLL exports are resolved before publishing adapter state, and the first failed export lookup retains its error code. Windows absolute-path classification replaces manual indexing. The public C ABI and IDL remain unchanged; empty endpoints now return `ERROR_INVALID_PARAMETER` explicitly.
+
+CMake explicitly selects C++20, a stable mode supported by VS 2022, rather than relying on MSVC's default C++14 mode or a preview mode. Generated Win32/x64 projects were checked for `stdcpp20`. See Microsoft's [language mode documentation](https://learn.microsoft.com/en-us/cpp/build/reference/std-specify-language-standard-version).
+
+Executed locally on Windows through Windows PowerShell, with VS 2022 / MSVC and SDK 10.0.26100.0:
+
+```powershell
+./scripts/build.ps1 -Configuration Debug
+./scripts/test.ps1 -Configuration Debug -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll
+./scripts/build.ps1
+./scripts/test.ps1 -LegacyDll ../../legacy/cpp_legacy/build/Win32/Release/sample_legacy.dll -Julia T:\julia-libm-review-20261103-003936\win64\bin\julia.exe
+```
+
+Both configurations built and passed native cross-bitness tests, including the wrong-architecture rejection. Debug also verifies that the SEH helper compiles without relying on optimization. Release passed the real x64 Julia smoke test. The probe now checks null output arguments, an empty endpoint, initialized scalar/status outputs after unavailable-endpoint errors, and successful calls after 16 rounds of failed ping/add/scale calls. These tests exercise cleanup paths; no resource-leak measurement or allocation-failure injection was performed.
+
+Additional Release host checks rejected relative, drive-relative (`C:relative.dll`), and root-relative (`\relative.dll`) paths with exit 3. Loading the x86 host executable as a same-architecture module without vendor exports returned error 127 / exit 3. An empty argument was omitted by Windows PowerShell and reached the usage check (exit 2), so it does not establish empty-string adapter behavior.
+
+Local transcripts and the additional-check script are retained in ignored `artifacts/refactor/debug.txt`, `release.txt`, and `validate.ps1`. `git diff --check` passed. GitHub Actions was not run for this refactor. Cross-user ACL rejection, allocation failures, malicious NDR messages, vendor crashes, and performance remain unverified.
+
+## Review fixes without WinRT (2026-11-03)
+
+Kept standard C++ RAII and Windows SDK APIs; no WinRT or new dependency was added. The null-invalid token owner is named `unique_token`, and `unique_local<T>` retains the allocated element type. Security setup failures report the failed operation and Win32 error. `Impl_Scale` once again clears valid output before rejecting null input.
+
+`rpc_try` now uses `RpcExceptionFilter`. The tracked native probe verifies both a recoverable `RpcRaiseException(RPC_S_SERVER_UNAVAILABLE)` and a synthetic `RaiseException(EXCEPTION_ACCESS_VIOLATION)` caught by an outer SEH handler. This tests exception filtering without performing an invalid memory access. Debug and Release Win32/x64 builds and native integration tests passed; Release also passed the real x64 Julia smoke test using the commands in the preceding section. Transcripts: ignored `artifacts/refactor/review-fixes-debug.txt` and `review-fixes-release.txt`.
+
+A local direct adapter regression test confirmed null input with a two-element valid output returns application status 2 and changes `[123,456]` to `[0,0]`; null output also returns 2. An isolated test replaced only `OpenProcessToken` with a failure returning `ERROR_ACCESS_DENIED` and confirmed a null descriptor plus `Security setup: OpenProcessToken failed: 5`. Test sources are in ignored `artifacts/review/`; this fault injection is not a production hook. It does not verify all security failure branches.
+
+The first diagnostic invocation was interrupted by Windows PowerShell treating the expected native stderr message as a terminating `NativeCommandError`. The test was rerun using `Start-Process -RedirectStandardError` and passed; transcript: `artifacts/refactor/review-fixes-security.txt`. The project builds, native/Julia tests, and direct output test had already passed before that shell-level interruption. `git diff --check` passed. Remote CI was not run.

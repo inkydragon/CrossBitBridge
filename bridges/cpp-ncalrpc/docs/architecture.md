@@ -27,6 +27,10 @@ Only ncalrpc is exposed. Clients use WINNT authentication and packet privacy. Th
 
 The host initializes the DLL before listening. There is no remote Shutdown method; the test owns the process and terminates it in `finally`. This validates the main path under the assumption of no resources retained across calls. Production adapters involving device handles, background threads, or persistent memory need orderly shutdown and resource handling.
 
+Resource ownership is scoped: `rpc/resources.h` uses `unique_ptr` deleters for token handles (`unique_token`), typed LocalAlloc memory (`unique_local<T>`), and DLL modules; `rpc_binding` owns each client binding. Raw pointers remain at Win32, MIDL, and C ABI boundaries as borrowed buffers or API output parameters. `std::span` carries the adapter's output length during initialization.
+
+Client calls share `ncal_call`. Its outer frame owns the binding, while `rpc_try` catches RPC SEH in a separate frame with no destructible local objects. This avoids MSVC C2712 and releases the binding after either success or a caught recoverable RPC exception. `RpcExceptionFilter` lets fatal exceptions, such as access violations, continue to an outer handler or terminate the process. Callables in this frame must not own resources that require unwinding across SEH. The host's adapter guard finalizes the DLL after listening returns and calls drain, including early initialization failures after the adapter has started.
+
 ## Adaptation limits
 
 The example uses synchronous calls with copied values and buffers. Its mutex serializes DLL entry but does not guarantee a fixed OS thread. Retained pointers, device handles, callbacks, thread affinity, and C++ object lifetimes need dedicated adapters. See the [README](../README.md) for source files and commands and [validation](validation.md) for tested boundaries.
