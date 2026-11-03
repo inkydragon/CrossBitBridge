@@ -1,4 +1,4 @@
-#include "bridge.h"
+#include "bridge.gen.h"
 #include "binding.h"
 #include "client.h"
 static_assert(sizeof(void*) == 8, "The client must be x64");

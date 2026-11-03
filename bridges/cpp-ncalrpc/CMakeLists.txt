@@ -24,13 +24,15 @@ endif()
 set(gen "${CMAKE_CURRENT_BINARY_DIR}/generated")
 file(MAKE_DIRECTORY "${gen}")
 add_custom_command(
-  OUTPUT "${gen}/bridge.h" "${gen}/bridge_c.c" "${gen}/bridge_s.c"
+  OUTPUT "${gen}/bridge.gen.h" "${gen}/bridge_c.gen.c" "${gen}/bridge_s.gen.c"
   COMMAND midl /nologo /env ${midl_env} /target NT60 /robust /Oicf
     /prefix client Wire_ server Impl_
-    /h bridge.h /cstub bridge_c.c /sstub bridge_s.c /out "${gen}" "${NCAL_IDL}"
-  DEPENDS "${NCAL_IDL}"
+    /h bridge.gen.h /cstub bridge_c.gen.c /sstub bridge_s.gen.c /out "${gen}" "${NCAL_IDL}"
+  COMMAND "${CMAKE_COMMAND}" "-DGENERATED_DIR=${gen}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mark-generated.cmake"
+  DEPENDS "${NCAL_IDL}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mark-generated.cmake"
   VERBATIM COMMENT "Generate ${midl_env} RPC stubs from ${NCAL_IDL}")
-add_custom_target(rpc_codegen DEPENDS "${gen}/bridge.h" "${gen}/bridge_c.c" "${gen}/bridge_s.c")
+add_custom_target(rpc_codegen DEPENDS "${gen}/bridge.gen.h" "${gen}/bridge_c.gen.c" "${gen}/bridge_s.gen.c")
 function(rpc_target target)
   add_dependencies(${target} rpc_codegen)
   target_include_directories(${target} PRIVATE "${gen}" "${CMAKE_CURRENT_SOURCE_DIR}/rpc")
@@ -38,13 +40,13 @@ function(rpc_target target)
   target_link_libraries(${target} PRIVATE Rpcrt4)
 endfunction()
 if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-  add_executable(ncal_host rpc/server.cpp rpc/memory.cpp "${NCAL_ADAPTER}" "${gen}/bridge_s.c")
+  add_executable(ncal_host rpc/server.cpp rpc/memory.cpp "${NCAL_ADAPTER}" "${gen}/bridge_s.gen.c")
   rpc_target(ncal_host)
   target_compile_definitions(ncal_host PRIVATE NCAL_SERVER_INTERFACE=Impl_${NCAL_INTERFACE}_s_ifspec)
   target_link_libraries(ncal_host PRIVATE Advapi32)
   target_include_directories(ncal_host PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../legacy/cpp_legacy")
 else()
-  add_library(ncal_client SHARED rpc/binding.cpp rpc/memory.cpp "${NCAL_CLIENT}" "${gen}/bridge_c.c")
+  add_library(ncal_client SHARED rpc/binding.cpp rpc/memory.cpp "${NCAL_CLIENT}" "${gen}/bridge_c.gen.c")
   rpc_target(ncal_client)
   target_compile_definitions(ncal_client PRIVATE NCAL_CLIENT_BUILD)
   add_executable(ncal_probe "${NCAL_PROBE}")

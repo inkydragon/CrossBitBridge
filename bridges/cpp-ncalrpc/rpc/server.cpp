@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <exception>
-#include "bridge.h"
+#include "bridge.gen.h"
 #include "adapter.h"
 #include "resources.h"
 

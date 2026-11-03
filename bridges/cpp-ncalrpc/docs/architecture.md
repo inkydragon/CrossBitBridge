@@ -15,7 +15,7 @@ See [bridging approaches](../../../docs/approaches.md) for cross-implementation 
 | x64 client | MIDL Wire_* functions | Stable C ABI, SEH handling, language-friendly wrappers |
 | Build | CMake + PowerShell + CI | Project-specific include/link settings and real DLL tests |
 
-`rpc/server.cpp` and `rpc/binding.cpp` implement the host and connection infrastructure. `examples/sample/adapter.cpp`, `client.cpp`, and `probe.cpp` are project-specific adapters; they are not inferred automatically from arbitrary IDL. MIDL handles marshaling, not verification that a DLL obeys declared buffer lengths.
+`rpc/server.cpp` and `rpc/binding.cpp` implement the host and connection infrastructure. `examples/sample/adapter.cpp`, `client.cpp`, and `probe.cpp` are project-specific adapters; they are not inferred automatically from arbitrary IDL. Generated files are named `bridge.gen.h`, `bridge_c.gen.c`, and `bridge_s.gen.c`. The build prepends a `DO NOT EDIT` notice after each MIDL invocation; change the configured IDL and regenerate instead. The stubs retain their `.c` extension because MIDL emits C. MIDL handles marshaling, not verification that a DLL obeys declared buffer lengths.
 
 The independent [legacy sample](../../../legacy/cpp_legacy/README.md) owns `legacy.cpp`, `legacy.h`, and `legacy.def`, with its own Win32 build. This bridge owns IDL, host, adapter, client, probe, and Julia examples. The adapter includes the legacy header through an explicit include directory; no legacy DLL is built, linked, or copied here. Tests receive the separately built DLL using required `-LegacyDll` and pass its absolute path to the host.
 

@@ -1,4 +1,4 @@
-#include "bridge.h"
+#include "bridge.gen.h"
 #include "adapter.h"
 #include "legacy.h"
 #include <cstdio>
