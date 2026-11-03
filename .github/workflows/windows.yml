@@ -2,11 +2,11 @@ name: C++ ncalrpc MWE
 on:
   push:
     paths:
-      - 'examples/cpp-ncalrpc/**'
+      - 'bridges/cpp-ncalrpc/**'
       - '.github/workflows/windows.yml'
   pull_request:
     paths:
-      - 'examples/cpp-ncalrpc/**'
+      - 'bridges/cpp-ncalrpc/**'
       - '.github/workflows/windows.yml'
   workflow_dispatch:
 permissions:
@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-2022
     defaults:
       run:
-        working-directory: examples/cpp-ncalrpc
+        working-directory: bridges/cpp-ncalrpc
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Generate and build x86 host and x64 client
@@ -36,10 +36,10 @@ jobs:
           name: cpp-ncalrpc-windows
           retention-days: 7
           path: |
-            examples/cpp-ncalrpc/build/Win32/Release/*.exe
-            examples/cpp-ncalrpc/build/Win32/Release/*.dll
-            examples/cpp-ncalrpc/build/x64/Release/*.exe
-            examples/cpp-ncalrpc/build/x64/Release/*.dll
-            examples/cpp-ncalrpc/build/Win32/generated/
-            examples/cpp-ncalrpc/build/x64/generated/
-            examples/cpp-ncalrpc/artifacts/logs/
+            bridges/cpp-ncalrpc/build/Win32/Release/*.exe
+            bridges/cpp-ncalrpc/build/Win32/Release/*.dll
+            bridges/cpp-ncalrpc/build/x64/Release/*.exe
+            bridges/cpp-ncalrpc/build/x64/Release/*.dll
+            bridges/cpp-ncalrpc/build/Win32/generated/
+            bridges/cpp-ncalrpc/build/x64/generated/
+            bridges/cpp-ncalrpc/artifacts/logs/

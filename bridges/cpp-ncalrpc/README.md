@@ -21,7 +21,7 @@ sample_legacy.dll (x86, C++ implementation / exported C API)
 Install the Visual Studio 2022 / Build Tools C++ desktop tools, Windows SDK including MIDL, and CMake 3.24+. The full Visual Studio IDE is not required. The script uses the VS 2022 generator to build Win32 and x64; a developer command prompt is not required. Windows 10/11 x64 is recommended.
 
 ```powershell
-cd T:\CrossBitBridge\examples\cpp-ncalrpc
+cd T:\CrossBitBridge\bridges\cpp-ncalrpc
 ./scripts/build.ps1
 ./scripts/test.ps1
 # Optional: test the real Julia client; standard libraries only.

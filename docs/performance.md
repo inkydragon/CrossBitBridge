@@ -22,6 +22,6 @@ Record the hardware, OS, toolchain, runtime/package versions, commands, and inpu
 
 ## Available repository evidence
 
-The [C++ validation record](../examples/cpp-ncalrpc/docs/validation.md) covers functional tests, not latency or throughput. Its [client wrappers](../examples/cpp-ncalrpc/examples/sample/client.cpp) create a binding for every call, with authentication configured in [binding.cpp](../examples/cpp-ncalrpc/rpc/binding.cpp). Measurements of that client include those choices; they describe the wrapper's connection policy as well as the transport.
+The [C++ validation record](../bridges/cpp-ncalrpc/docs/validation.md) covers functional tests, not latency or throughput. Its [client wrappers](../bridges/cpp-ncalrpc/examples/sample/client.cpp) create a binding for every call, with authentication configured in [binding.cpp](../bridges/cpp-ncalrpc/rpc/binding.cpp). Measurements of that client include those choices; they describe the wrapper's connection policy as well as the transport.
 
 Record whether results satisfy the user's stated target, what alternatives were actually measured, and which conclusions remain open. A result for one payload, machine, or connection policy does not establish a general ranking of languages or transports.

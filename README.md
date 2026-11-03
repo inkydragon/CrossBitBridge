@@ -13,11 +13,11 @@ COM, .NET, and HTTP examples are not implemented yet.
 
 ### C++ / ncalrpc
 
-[C++ / ncalrpc example](examples/cpp-ncalrpc/README.md):
+[C++ / ncalrpc example](bridges/cpp-ncalrpc/README.md):
 x64 Julia → x64 client → x86 host → C API DLL. Verified locally on Windows.
 
 ```powershell
-cd examples/cpp-ncalrpc
+cd bridges/cpp-ncalrpc
 ./scripts/build.ps1
 ./scripts/test.ps1
 ```

@@ -109,3 +109,17 @@ All project build and test steps passed. The native probe and real Julia client 
 An additional `versioninfo(verbose=true)` command failed after the passing project tests because this machine's Julia package cache targeted incompatible CPU features. The diagnostic was rerun successfully with `--compiled-modules=no --pkgimages=no`; it reported Julia 1.15.0-DEV.341, commit 985bc50ab5, x86_64 Windows. It also emitted StyledStrings import warnings. This workaround applied only to diagnostics; the Julia RPC smoke test passed with its normal options. No Julia environment or project source was changed to address the cache issue.
 
 Local evidence is retained in ignored `artifacts/precommit/transcript.txt` (including the initial diagnostic failure), `artifacts/precommit/julia-versioninfo.txt`, `artifacts/precommit/pe-architecture.txt`, and `artifacts/logs/`. Markdown links and workflow YAML were checked. GitHub Actions itself has not run; ACL rejection with a second user and performance remain unverified.
+
+## Stage 1: bridges directory (2026-11-03)
+
+Renamed the top-level `examples/` to `bridges/`. Historical commands above are unchanged. Old ignored products and logs were archived at repository-local `migration-archive-stage1/` (locally excluded from Git); no old CMake cache was reused.
+
+From `T:\CrossBitBridge\bridges\cpp-ncalrpc`, Windows PowerShell ran:
+
+```powershell
+./scripts/build.ps1 -Idl 'T:\CrossBitBridge\bridges\cpp-ncalrpc\artifacts\spec with spaces\alternate.idl' -GenerateOnly
+./scripts/build.ps1
+./scripts/test.ps1 -Julia T:\julia-libm-review-20261103-003936\win64\bin\julia.exe
+```
+
+All commands completed successfully (PowerShell process exit 0). Fresh Win32/x64 generation, default-IDL rebuild, native scalar/overflow/empty/maximum-array/input-bound/missing-endpoint probes, x86 rejection of the x64 DLL (exit 3), and real x64 Julia smoke tests passed. Transcript: `artifacts/stage1.txt`; test logs: `artifacts/logs/`. Markdown links, current top-level path references, ignored build/log directories, and `git diff --check` passed. CI is checked after pushing this commit; earlier CI statements above describe historical validation only.

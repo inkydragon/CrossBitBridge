@@ -26,7 +26,7 @@ For interfaces with callbacks or state across calls, examine reentrancy, thread 
 
 A few representative operations can expose different requirements: a scalar result, a variable-length output, an error return, or an operation that retains state. Choose cases relevant to the library rather than treating a fixed number as the final interface scope.
 
-The repository's [C++/ncalrpc example](../examples/cpp-ncalrpc/README.md) provides concrete IDL, adapter code, build commands, and a Julia client. [MSL-LoadLib's example](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) shows a different separation between native wrappers and remote methods. Use their validation boundaries when deciding which parts can be reused.
+The repository's [C++/ncalrpc example](../bridges/cpp-ncalrpc/README.md) provides concrete IDL, adapter code, build commands, and a Julia client. [MSL-LoadLib's example](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) shows a different separation between native wrappers and remote methods. Use their validation boundaries when deciding which parts can be reused.
 
 Possible checks include comparing bridged outputs and errors with a direct x86 baseline, verifying actual process architectures, exercising a rejection case, and observing host shutdown. Distinguish failures to load the DLL, transport failures, and native-library errors. A successful scalar call alone does not establish support for the library's other interfaces.
 

@@ -25,7 +25,7 @@ CrossBitBridge 提供小型、可运行的跨位数库调用示例与 AI 工作�
 - 根目录 [README.md](README.md)：项目入口与示例索引。
 - 根目录 `docs/`：跨实现的技术讨论、方案比较与参考资料；
     见[方案选择](docs/approaches.md)、[适配流程](docs/adaptation.md)、[性能比较](docs/performance.md)。
-- `examples/<language>-<transport>/`：各实现的源码、局部指引、构建步骤和验证记录。具体实现要求以该示例内的文档为准。
+- `bridges/<language>-<transport>/`：各实现的源码、局部指引、构建步骤和验证记录。具体实现要求以该示例内的文档为准。
 - 根目录 `.github/workflows/`：各示例的 CI 入口。
 
 ## 操作约定

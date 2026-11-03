@@ -22,7 +22,7 @@ CrossBitBridge provides small, runnable examples and AI guidance for calling lib
 - Root `AGENTS.md`: project goals, working principles, and repository conventions.
 - Root [README.md](README.md): project entry point and example index.
 - Root `docs/`: technical discussions, comparisons, and references shared across implementations. See [approaches](docs/approaches.md), [adaptation workflow](docs/adaptation.md), and [performance comparisons](docs/performance.md).
-- `examples/<language>-<transport>/`: implementation source, local guidance, build steps, and validation records. Consult the example's own documentation for specific implementation requirements.
+- `bridges/<language>-<transport>/`: implementation source, local guidance, build steps, and validation records. Consult the example's own documentation for specific implementation requirements.
 - Root `.github/workflows/`: CI entry points for examples.
 
 ## Operating conventions
