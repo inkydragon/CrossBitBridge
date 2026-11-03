@@ -1,16 +1,37 @@
-# Adapting a legacy library
+# Investigating and adapting a legacy library
 
-This is a suggested workflow for a dedicated bridge project. Select an approach using [approaches.md](approaches.md), then use the chosen example's README for concrete files, commands, and implementation limits.
+The following questions and small experiments can help establish a bridge design. Their order and scope depend on the user's task and available evidence. [Approaches](approaches.md) links to candidate paths; each example's README documents its actual implementation.
 
-1. Obtain the target architecture, calling convention, headers, examples, dependent DLLs, and permitted inputs. Export names alone do not establish full signatures.
-2. Start with 1–3 representative operations to validate the chain: scalars, input/output arrays, and error returns. Then complete the interface scope requested by the user. Existing x86 Julia/C#/C++ wrappers can serve as behavioral baselines.
-3. Establish length units, encoding, error codes, and ownership. Record unknowns rather than guessing how memory is freed.
-4. Check whether the API retains pointers or resources across calls, invokes callbacks, or requires a fixed thread or thread-local state. Stateless copying is a useful starting assumption, not a property inferred from a simple function signature. Use dedicated adaptation when the assumption does not hold.
-5. Keep native pointers and language objects inside their owning process. Define explicit values, buffers, or resource semantics at the process boundary.
-6. Copy the relevant example and edit ordinary contracts and source files. Use its standard generators and build tools; the repository does not require a new binding DSL.
-7. Run a real cross-bitness test. Compare important outputs with a local x86 baseline, include an error/rejection case, and distinguish transport errors from library errors.
-8. If the vendor DLL is unavailable, report what passed using the sample and what remains unverified. Cloud builds may compile wrappers without proprietary binaries; real-library tests can run locally or on a self-hosted runner.
+## Gather evidence about the native interface
 
-A useful deliverable is a small dedicated project containing its contract, host, client, build instructions, and replayable evidence. This workflow does not imply permission to upload proprietary inputs or publish artifacts.
+| Information to establish | Possible sources or checks |
+|---|---|
+| Architecture, exports, and ABI | Vendor headers, compiler settings, binary inspection, and working native examples. Export names alone do not establish complete signatures. |
+| Lengths, encoding, and ownership | Vendor documentation, annotations, allocation/free pairs, and existing wrapper behavior. Record gaps explicitly. |
+| Persistent state and execution requirements | Initialization/shutdown code, retained pointers, callbacks, thread-affinity requirements, and thread-local error handling. A simple signature does not establish stateless behavior. |
+| Existing behavior | A working x86 Julia/C#/C++ wrapper, native tests, or a small direct call to the DLL. Note which behavior comes from the wrapper rather than the DLL. |
+| Deployment constraints | Permitted runtimes, target machines, toolchain availability, DLL dependencies, access requirements, and restrictions on uploading proprietary inputs. |
 
-The implemented reference is [C++ / ncalrpc](../examples/cpp-ncalrpc/README.md). Its README documents IDL path arguments, adapter files, and build commands. Its [architecture](../examples/cpp-ncalrpc/docs/architecture.md) documents native dispatch, security, and lifetime boundaries.
+For Windows process/architecture constraints, see [Microsoft's interoperability documentation](https://learn.microsoft.com/en-us/windows/win32/winprog64/process-interoperability).
+
+## Describe the process boundary
+
+For each operation, identify inputs, outputs, error channels, resource lifetime, and the process responsible for each allocation or object. A pointer's numeric value is not by itself a reference to usable memory in another process. Copied values, copied buffers, remote identifiers, and explicit resource operations are possible representations; the API semantics determine which are adequate.
+
+For MIDL interfaces, Microsoft's [interface guide](https://learn.microsoft.com/en-us/windows/win32/rpc/developing-the-interface) explains the contract and generated stubs. [size_is](https://learn.microsoft.com/en-us/windows/win32/midl/size-is) describes allocation size, while [length_is](https://learn.microsoft.com/en-us/windows/win32/midl/length-is) describes the number of transmitted elements. These declarations still need correct length and ownership information from the underlying API.
+
+For interfaces with callbacks or state across calls, examine reentrancy, thread identity, cleanup, and what happens after host failure. Neither a transport nor COM automatically supplies the vendor library's ownership semantics.
+
+## Use a bounded experiment
+
+A few representative operations can expose different requirements: a scalar result, a variable-length output, an error return, or an operation that retains state. Choose cases relevant to the library rather than treating a fixed number as the final interface scope.
+
+The repository's [C++/ncalrpc example](../examples/cpp-ncalrpc/README.md) provides concrete IDL, adapter code, build commands, and a Julia client. [MSL-LoadLib's example](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) shows a different separation between native wrappers and remote methods. Use their validation boundaries when deciding which parts can be reused.
+
+Possible checks include comparing bridged outputs and errors with a direct x86 baseline, verifying actual process architectures, exercising a rejection case, and observing host shutdown. Distinguish failures to load the DLL, transport failures, and native-library errors. A successful scalar call alone does not establish support for the library's other interfaces.
+
+## Record the decision and its limits
+
+A concise record can include the requirements, sources consulted, alternatives examined, working commands, results, and unresolved questions. Explain which observations support the chosen design. Use [performance guidance](performance.md) if measured overhead affects the choice.
+
+If the vendor DLL is unavailable, separate sample validation from real-library compatibility. Building without proprietary binaries and testing on a local or self-hosted machine is one possible workflow. The user's access and publication constraints determine where those steps may run.

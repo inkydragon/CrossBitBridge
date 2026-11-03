@@ -1,60 +1,55 @@
 # Bridging approaches
 
-Design discussion and candidate paths for adapting legacy libraries. This is not a requirement to implement every backend. See the [example index](../README.md) for current status and each example's own validation record for evidence.
+Use these sources and examples to investigate a bridge for a particular library. They do not rank languages or transports. Record the application's requirements and compare candidate implementations against them; see [adaptation](adaptation.md) and [measurement](performance.md).
 
-## Selection
+## Establish the constraints
 
-- Windows only, C/C++ SDK, frequent small calls, and latency concerns: start with `examples/cpp-ncalrpc/`.
-- Existing C# wrappers, with a preference for C# throughout and simple deployment: consider Native AOT + NamedPipeServerStream/NamedPipeClientStream + a small binary request/response protocol. Publish and test win-x86, not just win-x64.
-- Standard contracts, multiple client languages, or streaming: consider .proto + gRPC. .NET officially supports named pipe/UDS IPC, and ASP.NET Core supports gRPC Native AOT. Verify the complete combination of target versions and Windows x86.
-- Existing marshalable COM interfaces: evaluate out-of-process COM first. Ordinary C/C++ objects still need wrappers; ownership, threads, and callbacks remain the adapter's responsibility. Complex object lifetimes alone do not require COM.
-- Ease of debugging and business-level wrappers matter more than small call overhead: an HTTP service is an option.
+Questions that can change the available choices include:
 
-## Existing cross-bitness bridge: MSL-LoadLib
+- Which process architecture can load the library, and which compiler/runtime ABI does its interface require?
+- What wrappers, headers, working examples, or COM type information already exist?
+- Which values can be copied, and which operations depend on persistent resources, callbacks, or a particular thread?
+- Which client languages, deployment environments, build tools, and access controls must be supported?
+- What call frequency, payload sizes, latency targets, and maintenance constraints matter to the user?
 
-[MSL-LoadLib's client-server guide](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) demonstrates a 64-bit Python client calling a 32-bit library through a `Client64` / `Server32` pair. Users write server-side wrappers for the native calls and invoke them through `request32`; creating the client starts the server automatically. Consider it when Python fits the application, or as a reference for separating native bindings from cross-process calls.
+On Windows, a 64-bit process cannot directly load a 32-bit DLL for execution. Microsoft documents cross-bitness RPC and out-of-process COM as supported communication paths. This establishes the process boundary, not the best wrapper or transport for an application. [Process interoperability](https://learn.microsoft.com/en-us/windows/win32/winprog64/process-interoperability).
 
-The documented approach exchanges serialized Python objects through a file using `pickle`. It is a useful architectural reference, but does not establish performance equivalence with ncalrpc. CrossBitBridge does not currently integrate or validate MSL-LoadLib.
+## Paths and evidence
 
-## C++ and .NET Native AOT
-
-The following comparison concerns retaining Windows RPC ncalrpc. It is architectural analysis, not a measured comparison. The running [C++ example](../examples/cpp-ncalrpc/README.md) does not establish that another path is slower or unsuitable.
-
-| Dimension | Native C++ | .NET Native AOT |
+| Path | Available evidence | Questions for the target application |
 |---|---|---|
-| IDL-driven build | Compile and link MIDL stubs directly | MIDL does not emit C# directly; retain a native bridge or add a generator |
-| C DLL binding | Vendor headers and function pointers | LibraryImport generates marshaling for build-time-known signatures |
-| Dynamic signatures | libffi could be added; not implemented in the C++ example | No Reflection.Emit under AOT; arbitrary signatures still need an engine such as libffi |
-| ncalrpc access | Link Rpcrt4 and use SDK declarations | P/Invoke accesses management APIs but does not automatically provide complete NDR stubs |
-| Server dispatch | Native Impl_* functions enter the adapter | C++ stubs can call an AOT DLL through a fixed C ABI, adding an ABI/lifetime boundary |
-| Memory | Explicit management and review | Managed code can simplify logic; native buffers and RPC allocations still have separate lifetimes |
-| Exceptions | Catch RPC SEH inside the client C ABI | Define a native exception boundary; RPC SEH is not automatically an ordinary C# exception |
-| Toolchain | SDK/MIDL + MSVC + CMake | Usually retain RPC tools and add .NET SDK/AOT tools |
-| Distribution | EXE/DLL with static CRT in the C++ example | Includes required AOT runtime; measure actual size |
-| Maintenance | One main ABI/build stack | Useful when C# simplifies business logic, but native RPC and managed interop remain separate layers |
+| C++ + MIDL + ncalrpc | The repository's [example](../examples/cpp-ncalrpc/README.md) and [validation record](../examples/cpp-ncalrpc/docs/validation.md) demonstrate x64 Julia calling an x86 C API DLL. Microsoft describes [MIDL stub generation](https://learn.microsoft.com/en-us/windows/win32/rpc/developing-the-interface). | Does the actual DLL satisfy the example's ABI, lifetime, and thread assumptions? What adapter code and deployment dependencies remain? |
+| Out-of-process COM | Microsoft's [cross-bitness documentation](https://learn.microsoft.com/en-us/windows/win32/winprog64/process-interoperability) describes communication with a 32-bit COM server and wrapping a non-COM DLL. | Are marshalable COM interfaces already available? If not, who defines the wrapper, ownership rules, threading behavior, and deployment? |
+| .NET + named pipes | [NamedPipeServerStream](https://learn.microsoft.com/en-us/dotnet/api/system.io.pipes.namedpipeserverstream) provides synchronous/asynchronous stream access. It does not define the application's RPC messages. | What framing, serialization, dispatch, and client implementation are needed? Can the chosen dependencies be published and run as win-x86? |
+| .NET + gRPC over IPC | Microsoft provides [named pipe/UDS configuration examples](https://learn.microsoft.com/en-us/aspnet/core/grpc/interprocess?view=aspnetcore-10.0) and documents [gRPC Native AOT support](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/native-aot). | Does the complete SDK, package, transport, and target-architecture combination work? Which clients can connect using that transport? |
+| HTTP service | ASP.NET Core's [Native AOT guide](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/native-aot) includes a Minimal API template and its compatibility limits. | How are operations and binary payloads represented? What measured overhead, endpoint lifecycle, and access controls fit the application? |
+| Python + MSL-LoadLib | The upstream [client-server guide](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) demonstrates a 64-bit Python client accessing a 32-bit library. | Can the application use the Python runtime and its wrappers? What packaging, data types, and call costs need checking? |
 
-The official Native AOT target table currently lists Windows x86, so lack of x86 support is not grounds for rejecting it. Verify the selected .NET version, NuGet dependencies, and win-x86 publication separately. A .NET SDK is installed locally, but no .NET AOT build has been published for this repository.
+Only the C++/ncalrpc path has an implementation and validation record in this repository. The other rows identify upstream documented capabilities or examples, not completed CrossBitBridge integrations. Individual feature support does not establish that a combined win-x86 deployment works.
 
-## Using .NET IPC instead of ncalrpc
+Microsoft recommends ncalrpc for local calls within Windows RPC in its [protocol-sequence guidance](https://learn.microsoft.com/en-us/windows/win32/rpc/choosing-a-protocol-sequence). That recommendation is not a benchmark of every named-pipe, HTTP, or language-specific implementation.
 
-Native AOT + direct named pipes or official gRPC IPC can avoid a C++ RPC layer. Direct named pipes require a message protocol; gRPC provides a standard contract and generated clients. Neither has been benchmarked against ncalrpc here. Verify actual win-x86 publication and calls for the selected SDK and dependencies.
+## MSL-LoadLib case study
 
-When retaining ncalrpc with substantial existing C# logic, a C++ RPC shell can call a .NET AOT native DLL through fixed, blittable C ABI exports using `UnmanagedCallersOnly`. The AOT DLL can call the vendor library through LibraryImport. This reuses native MIDL stubs instead of hand-writing NDR, but adds an interop boundary.
+The [upstream example](https://mslnz.github.io/msl-loadlib/latest/usage/ipc/) separates native calls in a `Server32` subclass from requests made by `Client64.request32`. Creating the client starts the server. The guide describes exchanging Python objects through a file using `pickle` and includes runnable examples for several library types.
 
-## Other compiled languages
+To evaluate this pattern, trace one operation from the public client method through argument conversion, native invocation, result conversion, and server shutdown. Then identify which pieces an application can reuse. CrossBitBridge has not run MSL-LoadLib or compared its performance with ncalrpc.
 
-Rust can access Win32 RPC through windows/windows-sys and reuse native MIDL stubs; API bindings do not automatically generate a complete high-level server from IDL. Zig can reuse native stubs through the C ABI, subject to toolchain verification. Go can build an x86 host and call DLLs, and provides net/rpc, but its default protocol is awkward for a Julia client and standard net/rpc is frozen. Changing languages generally does not remove interface-definition and marshaling work.
+## Investigating C++ and .NET AOT integration
 
-## References
+For a proposed implementation, identify which tool owns each boundary rather than estimating maintenance from the language name alone:
 
-- [ASP.NET Core gRPC IPC](https://learn.microsoft.com/en-us/aspnet/core/grpc/interprocess): named pipes/UDS and HTTP/2.
-- [ASP.NET Core Native AOT](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/native-aot): AOT support for gRPC.
-- [NamedPipeServerStream](https://learn.microsoft.com/en-us/dotnet/api/system.io.pipes.namedpipeserverstream): synchronous/asynchronous streams; does not define an RPC contract automatically.
-- [Rust Win32 RPC API](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/System/Rpc/index.html).
-- [Go net/rpc](https://pkg.go.dev/net/rpc): protocol and frozen status.
-- [Zig overview](https://ziglang.org/learn/overview/): C interoperability.
-- [.NET Native AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/): target support and restrictions.
-- [P/Invoke source generation](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/pinvoke-source-generation): LibraryImport marshaling.
-- [Native AOT interoperability](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/interop): C exports and type restrictions.
+| Boundary | Source or concrete evidence | What to inspect |
+|---|---|---|
+| RPC contract to stubs | [MIDL generates C client/server stubs](https://learn.microsoft.com/en-us/windows/win32/rpc/developing-the-interface); the C++ example compiles them directly. | Which generated files and hand-written adapters does another host language need? |
+| Managed code to a C API | [LibraryImport source generation](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/pinvoke-source-generation). | Which signatures, marshaling rules, and calling conventions are supported by the selected toolchain? |
+| AOT deployment | [.NET Native AOT targets, prerequisites, and restrictions](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/). Runtime code generation such as Reflection.Emit is unsupported. | Which signatures are known at build time? Which dependencies and target runtime identifiers actually publish and run? |
+| Native caller to an AOT library | [Native AOT exports](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/interop) use UnmanagedCallersOnly and have type restrictions. | Can a fixed C ABI represent the required operations, errors, and ownership rules? |
 
-For measurement guidance, see [performance.md](performance.md). For adaptation workflow, see [adaptation.md](adaptation.md).
+One design to test is a native MIDL/RPC shell calling an AOT library through C exports, with the AOT library invoking the vendor DLL. This combines documented building blocks; there is no end-to-end example of that combination here. Other designs may avoid that boundary by using a different transport. Count the generated code, handwritten code, build dependencies, and deployment artifacts of the actual designs before drawing maintenance conclusions.
+
+## Additional language entry points
+
+- [Rust Win32 RPC bindings](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/System/Rpc/index.html): inspect the available APIs and the remaining stub/adapter work. Bindings alone are not an end-to-end cross-bitness example.
+- [Zig C interoperability](https://ziglang.org/learn/overview/): investigate compiling or linking the required native components with the selected target and SDK. No Zig bridge has been validated here.
+- [Go net/rpc](https://pkg.go.dev/net/rpc): inspect its method requirements and default gob encoding when considering a client in another language. The package documents that it is frozen. That status alone does not determine suitability for a particular application.
